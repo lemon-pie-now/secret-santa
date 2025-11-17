@@ -30,20 +30,19 @@ generateBtn.addEventListener("click", () => {
   errorEl.textContent = "";
   resultsEl.innerHTML = "";
 
-  let participants;
+  let names;
   try {
-    participants = parseParticipants(participantsInput.value);
+    names = parseNames(participantsInput.value);
   } catch (err) {
     errorEl.textContent = err.message;
     return;
   }
 
-  if (participants.length < 2) {
+  if (names.length < 2) {
     errorEl.textContent = "Please enter at least 2 participants.";
     return;
   }
 
-  const names = participants.map((p) => p.name);
   const pairs = generateSecretSantaPairs(names);
 
   if (!pairs) {
@@ -51,45 +50,28 @@ generateBtn.addEventListener("click", () => {
     return;
   }
 
-  renderResults(pairs, participants);
+  renderResults(pairs);
 });
 
-// ===== Parse "Name, Email" per line =====
-function parseParticipants(text) {
+// ===== Parse names (one per line) =====
+function parseNames(text) {
   const lines = text
     .split("\n")
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 
-  const participants = [];
-
-  for (const line of lines) {
-    const parts = line.split(",");
-    if (parts.length < 2) {
-      throw new Error(
-        `Line "${line}" is invalid. Use "Name, Email" format.`
-      );
-    }
-    const name = parts[0].trim();
-    const email = parts.slice(1).join(",").trim(); // handles commas in names if needed
-
-    if (!name || !email) {
-      throw new Error(
-        `Line "${line}" is invalid. Name or email missing.`
-      );
-    }
-
-    participants.push({ name, email });
+  if (lines.length === 0) {
+    throw new Error("Please enter at least 2 participants.");
   }
 
-  // Optional: basic duplicate name check
-  const names = participants.map((p) => p.name.toLowerCase());
-  const uniqueNames = new Set(names);
-  if (uniqueNames.size !== names.length) {
-    throw new Error("Duplicate participant names detected. Names must be unique.");
+  // Optional: check for duplicate names
+  const lowerNames = lines.map((n) => n.toLowerCase());
+  const uniqueNames = new Set(lowerNames);
+  if (uniqueNames.size !== lowerNames.length) {
+    throw new Error("Duplicate names detected. Names must be unique.");
   }
 
-  return participants;
+  return lines;
 }
 
 // ===== Fisher–Yates shuffle =====
@@ -130,20 +112,17 @@ function generateSecretSantaPairs(names) {
   return null;
 }
 
-// ===== Render results (with mailto links) =====
-// ===== Render results (just a list of links, no emails) =====
 // ===== Render results + create shareable results page URL =====
-function renderResults(pairs, participants) {
+function renderResults(pairs) {
   // Clear previous results
   resultsEl.innerHTML = "";
 
-  // Build the data we want to share (just names)
+  // Data we want to share on results.html
   const pairsForSharing = pairs.map((p) => ({
     from: p.from,
     to: p.to,
   }));
 
-  // Encode as base64 so it fits in a URL
   const encoded = encodeBase64(JSON.stringify(pairsForSharing));
 
   // Build URL to results.html in the same folder
@@ -159,7 +138,7 @@ function renderResults(pairs, participants) {
     `<a href="${shareUrl}" target="_blank">${shareUrl}</a>`;
   resultsEl.appendChild(shareP);
 
-  // Also show local table of links (for the organizer)
+  // Also show local table of individual links (for the organizer)
   const table = document.createElement("table");
 
   const thead = document.createElement("thead");
@@ -211,6 +190,12 @@ function renderResults(pairs, participants) {
   resultsEl.appendChild(table);
 }
 
+// ===== Helper: get query param =====
+function getQueryParam(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name);
+}
+
 // ===== Helpers for base64 with UTF-8 support =====
 function encodeBase64(str) {
   return btoa(unescape(encodeURIComponent(str)));
@@ -218,9 +203,4 @@ function encodeBase64(str) {
 
 function decodeBase64(str) {
   return decodeURIComponent(escape(atob(str)));
-}
-// ===== Helper: get query param =====
-function getQueryParam(name) {
-  const params = new URLSearchParams(window.location.search);
-  return params.get(name);
 }
