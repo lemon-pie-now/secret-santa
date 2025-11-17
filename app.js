@@ -178,7 +178,7 @@ function renderResults(pairs) {
     const linkTd = document.createElement("td");
     const linkA = document.createElement("a");
     linkA.href = linkUrl;
-    linkA.textContent = giverName . "Link";
+    linkA.textContent = `${giverName}Link`;
     linkA.target = "_blank";
     linkTd.appendChild(linkA);
     tr.appendChild(linkTd);
