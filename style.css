@@ -70,13 +70,17 @@ button:hover {
 }
 
 #results a {
-  color:white;
   text-decoration: none;
 }
-#results a:visited {
-    color:white;
-}
+
 
 #results a:hover {
   text-decoration: underline;
+}
+#results-button a {
+  color:white;
+  text-decoration: none;
+}
+#results-button a:visited {
+    color:white;
 }
