@@ -135,7 +135,7 @@ function renderResults(pairs) {
   const shareP = document.createElement("p");
   shareP.innerHTML =
     `Share this page with your participants: <br>` +
-    `<a href="${shareUrl}" target="_blank">"Results"</a>`;
+    `<button><a href="${shareUrl}" target="_blank">"Results"</a></button>`;
   resultsEl.appendChild(shareP);
 
   // Also show local table of individual links (for the organizer)
