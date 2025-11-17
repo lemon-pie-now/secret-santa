@@ -132,8 +132,34 @@ function generateSecretSantaPairs(names) {
 
 // ===== Render results (with mailto links) =====
 // ===== Render results (just a list of links, no emails) =====
+// ===== Render results + create shareable results page URL =====
 function renderResults(pairs, participants) {
+  // Clear previous results
+  resultsEl.innerHTML = "";
 
+  // Build the data we want to share (just names)
+  const pairsForSharing = pairs.map((p) => ({
+    from: p.from,
+    to: p.to,
+  }));
+
+  // Encode as base64 so it fits in a URL
+  const encoded = encodeBase64(JSON.stringify(pairsForSharing));
+
+  // Build URL to results.html in the same folder
+  const basePath =
+    window.location.origin +
+    window.location.pathname.replace(/index\.html?$/i, "");
+  const shareUrl = `${basePath}results.html?data=${encoded}`;
+
+  // Show the share URL
+  const shareP = document.createElement("p");
+  shareP.innerHTML =
+    `Share this page with your participants: <br>` +
+    `<a href="${shareUrl}" target="_blank">${shareUrl}</a>`;
+  resultsEl.appendChild(shareP);
+
+  // Also show local table of links (for the organizer)
   const table = document.createElement("table");
 
   const thead = document.createElement("thead");
@@ -150,20 +176,20 @@ function renderResults(pairs, participants) {
 
   const tbody = document.createElement("tbody");
 
-  const baseUrl = window.location.origin + window.location.pathname;
+  const assignmentBase =
+    window.location.origin +
+    window.location.pathname.replace(/index\.html?$/i, "");
 
   for (const pair of pairs) {
     const giverName = pair.from;
     const recipientName = pair.to;
 
-    // Build unique link for this giver
     const linkUrl =
-      `${baseUrl}?giver=` +
+      `${assignmentBase}?giver=` +
       encodeURIComponent(giverName) +
       `&recipient=` +
       encodeURIComponent(recipientName);
 
-    // Table row
     const tr = document.createElement("tr");
 
     const giverTd = document.createElement("td");
@@ -185,6 +211,14 @@ function renderResults(pairs, participants) {
   resultsEl.appendChild(table);
 }
 
+// ===== Helpers for base64 with UTF-8 support =====
+function encodeBase64(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+
+function decodeBase64(str) {
+  return decodeURIComponent(escape(atob(str)));
+}
 // ===== Helper: get query param =====
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
