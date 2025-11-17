@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Secret Santa Links</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Secret Santa Links</h1>
+    <p class="hint">
+      Find your name in the list below and click your link to reveal who you are gifting to.
+    </p>
+    <p id="error" class="error"></p>
+    <div id="results"></div>
+  </div>
+
+  <script>
+    const errorEl = document.getElementById("error");
+    const resultsEl = document.getElementById("results");
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const dataParam = getQueryParam("data");
+      if (!dataParam) {
+        errorEl.textContent = "No Secret Santa data found in the URL.";
+        return;
+      }
+
+      let pairs;
+      try {
+        const json = decodeBase64(dataParam);
+        pairs = JSON.parse(json);
+      } catch (e) {
+        console.error(e);
+        errorEl.textContent = "Could not read Secret Santa data.";
+        return;
+      }
+
+      if (!Array.isArray(pairs) || pairs.length === 0) {
+        errorEl.textContent = "No assignments found.";
+        return;
+      }
+
+      renderLinksTable(pairs);
+    });
+
+    function renderLinksTable(pairs) {
+      const table = document.createElement("table");
+
+      const thead = document.createElement("thead");
+      const headerRow = document.createElement("tr");
+      ["Giver", "Secret Link"].forEach((text) => {
+        const th = document.createElement("th");
+        th.textContent = text;
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      // Link back to index.html in the same folder (default file)
+      const assignmentBase =
+        window.location.origin +
+        window.location.pathname.replace(/results\.html?$/i, "");
+
+      for (const pair of pairs) {
+        const giverName = pair.from;
+        const recipientName = pair.to;
+
+        const linkUrl =
+          `${assignmentBase}?giver=` +
+          encodeURIComponent(giverName) +
+          `&recipient=` +
+          encodeURIComponent(recipientName);
+
+        const tr = document.createElement("tr");
+
+        const giverTd = document.createElement("td");
+        giverTd.textContent = giverName;
+        tr.appendChild(giverTd);
+
+        const linkTd = document.createElement("td");
+        const linkA = document.createElement("a");
+        linkA.href = linkUrl;
+        linkA.textContent = linkUrl;
+        linkA.target = "_blank";
+        linkTd.appendChild(linkA);
+        tr.appendChild(linkTd);
+
+        tbody.appendChild(tr);
+      }
+
+      table.appendChild(tbody);
+      resultsEl.appendChild(table);
+    }
+
+    // Query param helper
+    function getQueryParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    // Base64 helpers (must match app.js)
+    function encodeBase64(str) {
+      return btoa(unescape(encodeURIComponent(str)));
+    }
+    function decodeBase64(str) {
+      return decodeURIComponent(escape(atob(str)));
+    }
+  </script>
+</body>
+</html>
