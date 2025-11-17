@@ -7,19 +7,36 @@
 </head>
 <body>
   <div class="container">
-    <h1>Secret Santa Generator</h1>
-    <p>Enter one name per line:</p>
 
-    <textarea id="namesInput" rows="8" placeholder="Alice
-Bob
-Charlie"></textarea>
+    <!-- Generator view (for the organizer) -->
+    <div id="generatorView">
+      <h1>Secret Santa Generator</h1>
+      <p>Enter participants, one per line, as <strong>Name, Email</strong>:</p>
 
-    <button id="generateBtn">Generate Pairs</button>
+      <textarea id="participantsInput" rows="8" placeholder="Alice, alice@example.com
+Bob, bob@example.com
+Charlie, charlie@example.com"></textarea>
 
-    <p id="error" class="error"></p>
+      <button id="generateBtn">Generate Pairs</button>
 
-    <h2>Results</h2>
-    <div id="results"></div>
+      <p id="error" class="error"></p>
+
+      <h2>Results</h2>
+      <p class="hint">
+        Click the email link next to each person to open a pre-filled email with their unique Secret Santa link.
+      </p>
+      <div id="results"></div>
+    </div>
+
+    <!-- Assignment view (for people who open their link) -->
+    <div id="assignmentView" class="hidden">
+      <h1>Your Secret Santa Assignment</h1>
+      <p id="assignmentText"></p>
+      <p class="hint">
+        Keep this a secret! You can bookmark this page if you need to check later.
+      </p>
+    </div>
+
   </div>
 
   <script src="app.js"></script>

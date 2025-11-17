@@ -5,7 +5,7 @@ body {
 }
 
 .container {
-  max-width: 600px;
+  max-width: 700px;
   margin: 40px auto;
   background: #ffffff;
   padding: 24px;
@@ -47,11 +47,33 @@ button:hover {
   min-height: 1.2em;
 }
 
-#results ul {
-  list-style: none;
-  padding-left: 0;
+.hint {
+  font-size: 13px;
+  color: #666666;
 }
 
-#results li {
-  padding: 4px 0;
+.hidden {
+  display: none;
+}
+
+#results table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+}
+
+#results th,
+#results td {
+  padding: 8px;
+  border-bottom: 1px solid #eeeeee;
+  text-align: left;
+}
+
+#results a {
+  font-size: 13px;
+  text-decoration: none;
+}
+
+#results a:hover {
+  text-decoration: underline;
 }
