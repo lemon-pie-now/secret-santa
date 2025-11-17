@@ -131,16 +131,20 @@ function generateSecretSantaPairs(names) {
 }
 
 // ===== Render results (with mailto links) =====
+// ===== Render results (just a list of links, no emails) =====
 function renderResults(pairs, participants) {
+
   const table = document.createElement("table");
 
   const thead = document.createElement("thead");
   const headerRow = document.createElement("tr");
-  ["Giver", "Recipient (hidden from email)", "Email link"].forEach((text) => {
+
+  ["Giver", "Secret Link"].forEach((text) => {
     const th = document.createElement("th");
     th.textContent = text;
     headerRow.appendChild(th);
   });
+
   thead.appendChild(headerRow);
   table.appendChild(thead);
 
@@ -152,12 +156,6 @@ function renderResults(pairs, participants) {
     const giverName = pair.from;
     const recipientName = pair.to;
 
-    // Find giver's email
-    const giver = participants.find(
-      (p) => p.name.toLowerCase() === giverName.toLowerCase()
-    );
-    const giverEmail = giver ? giver.email : "";
-
     // Build unique link for this giver
     const linkUrl =
       `${baseUrl}?giver=` +
@@ -165,39 +163,20 @@ function renderResults(pairs, participants) {
       `&recipient=` +
       encodeURIComponent(recipientName);
 
-    // Build mailto link
-    const subject = `Your Secret Santa assignment`;
-    const body = `Hi ${giverName},
-
-Here is your Secret Santa link. Open it to see who you're gifting to:
-
-${linkUrl}
-
-Happy gifting!`;
-    const mailtoHref =
-      `mailto:${encodeURIComponent(giverEmail)}` +
-      `?subject=` +
-      encodeURIComponent(subject) +
-      `&body=` +
-      encodeURIComponent(body);
-
-    // Build row
+    // Table row
     const tr = document.createElement("tr");
 
     const giverTd = document.createElement("td");
     giverTd.textContent = giverName;
     tr.appendChild(giverTd);
 
-    const recipientTd = document.createElement("td");
-    recipientTd.textContent = recipientName;
-    tr.appendChild(recipientTd);
-
-    const emailTd = document.createElement("td");
-    const emailLink = document.createElement("a");
-    emailLink.href = mailtoHref;
-    emailLink.textContent = "Open email draft";
-    emailTd.appendChild(emailLink);
-    tr.appendChild(emailTd);
+    const linkTd = document.createElement("td");
+    const linkA = document.createElement("a");
+    linkA.href = linkUrl;
+    linkA.textContent = linkUrl;
+    linkA.target = "_blank";
+    linkTd.appendChild(linkA);
+    tr.appendChild(linkTd);
 
     tbody.appendChild(tr);
   }
