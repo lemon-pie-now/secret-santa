@@ -73,6 +73,9 @@ button:hover {
   color:white;
   text-decoration: none;
 }
+#results a:visited {
+    color:white;
+}
 
 #results a:hover {
   text-decoration: underline;
