@@ -7,6 +7,7 @@ const resultsEl = document.getElementById("results");
 const generatorView = document.getElementById("generatorView");
 const assignmentView = document.getElementById("assignmentView");
 const assignmentText = document.getElementById("assignmentText");
+const API_BASE = "https://secret-santa-api-ijd1.onrender.com/";
 
 // ===== On load: check if this is an assignment link =====
 document.addEventListener("DOMContentLoaded", () => {
@@ -190,6 +191,68 @@ function renderResults(pairs) {
   resultsEl.appendChild(table);
 }
 
+// ---- Wishlist: fetch from backend ----
+async function loadWishlist(name) {
+  const url = `${API_BASE}/api/wishlist/${encodeURIComponent(name)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    return [];
+  }
+  const data = await res.json();
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+// ---- Wishlist: save to backend ----
+async function saveWishlist(name, items) {
+  const url = `${API_BASE}/api/wishlist`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, items }),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to save wishlist");
+  }
+}
+function initWishlistUI() {
+  if (!wishlistForm || !currentGiver || !currentRecipient) return;
+
+  // Load giver's wishlist into form
+  loadWishlist(currentGiver).then((myWishlist) => {
+    for (let i = 0; i < wishlistInputs.length; i++) {
+      wishlistInputs[i].value = myWishlist[i] || "";
+    }
+  });
+
+  // Load recipient's wishlist to display
+  loadWishlist(currentRecipient).then((recipWishlist) => {
+    renderWishlistDisplay(recipWishlist);
+  });
+}
+
+if (wishlistForm) {
+  wishlistForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!currentGiver) return;
+
+    const items = [];
+    wishlistInputs.forEach((input) => {
+      const value = input.value.trim();
+      if (value.length > 0) {
+        items.push(value);
+      }
+    });
+
+    try {
+      await saveWishlist(currentGiver, items);
+      wishlistSaveMsg.textContent = "Your gift preferences have been saved.";
+    } catch (err) {
+      console.error(err);
+      wishlistSaveMsg.textContent =
+        "There was a problem saving your preferences.";
+    }
+  });
+}
 // ===== Helper: get query param =====
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
