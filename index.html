@@ -29,15 +29,70 @@ Charlie"></textarea>
     </div>
 
     <!-- Assignment view (for people who open their link) -->
-    <div id="assignmentView" class="hidden">
-      <h1>Your Secret Santa Assignment</h1>
-      <p id="assignmentText"></p>
-      <p class="hint">
-        Keep this a secret! You can bookmark this page if you need to check later.
-      </p>
-    </div>
+<div id="assignmentView" class="hidden">
+  <h1>Your Secret Santa Assignment</h1>
+  <p id="assignmentText"></p>
 
+  <!-- Recipient's wishlist (what YOU should buy for them) -->
+  <div class="wishlist-section">
+    <h2>What your recipient would like to receive</h2>
+    <p class="hint">
+      These are the gift ideas your assigned person has added.
+      Use this list to choose their present.
+    </p>
+    <div id="recipientWishlist"></div>
   </div>
+
+  <!-- Your own wishlist (what YOU would like to receive) -->
+  <div class="wishlist-section">
+    <h2>Your own wishlist</h2>
+    <p class="hint">
+      Add up to 5 gift ideas you would like to receive.
+      <br>
+      <strong>Important:</strong> The person who is giving a gift to <em>you</em>
+      will see this list when they open their own Secret Santa link.
+    </p>
+
+    <form id="wishlistForm">
+      <table class="wishlist-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Gift idea (for gifts YOU would like)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td><input type="text" class="wishlist-input" /></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td><input type="text" class="wishlist-input" /></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td><input type="text" class="wishlist-input" /></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td><input type="text" class="wishlist-input" /></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td><input type="text" class="wishlist-input" /></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <button type="submit">Save my wishlist</button>
+    </form>
+    <p id="wishlistSaveMsg" class="hint"></p>
+  </div>
+</div>
+
+</div>
+
 
   <script src="app.js"></script>
 </body>
