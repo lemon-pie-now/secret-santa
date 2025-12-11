@@ -9,19 +9,15 @@
   <div class="container">
     <h1>Secret Santa Links</h1>
     <p class="hint">
-      Find your name in the list below and click your link to reveal who you are gifting to.
-      <br>
-      If a recipient has added their gift preferences, they will appear in the "Recipient Wishlist" column.
+      Find your name in the list below and click your secret link to see:
+      <br>• Who you are gifting to
+      <br>• Your recipient's wishlist (if they have added one)
     </p>
     <p id="error" class="error"></p>
     <div id="results"></div>
   </div>
 
   <script>
-    // 👇 Set this to your deployed backend URL (NOT localhost)
-    // e.g. "https://secret-santa-api-xyz.onrender.com"
-    const API_BASE = "https://your-api-name.onrender.com";
-
     const errorEl = document.getElementById("error");
     const resultsEl = document.getElementById("results");
 
@@ -50,13 +46,13 @@
       renderLinksTable(pairs);
     });
 
-    // Render the table with wishlist info
+    // Render the table with giver + secret link
     function renderLinksTable(pairs) {
       const table = document.createElement("table");
 
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
-      ["Giver", "Recipient", "Secret Link", "Recipient Wishlist"].forEach((text) => {
+      ["Giver", "Secret Link"].forEach((text) => {
         const th = document.createElement("th");
         th.textContent = text;
         headerRow.appendChild(th);
@@ -88,11 +84,6 @@
         giverTd.textContent = giverName;
         tr.appendChild(giverTd);
 
-        // Recipient
-        const recipientTd = document.createElement("td");
-        recipientTd.textContent = recipientName;
-        tr.appendChild(recipientTd);
-
         // Secret link
         const linkTd = document.createElement("td");
         const linkA = document.createElement("a");
@@ -102,58 +93,11 @@
         linkTd.appendChild(linkA);
         tr.appendChild(linkTd);
 
-        // Recipient wishlist (fetched from backend)
-        const wishlistTd = document.createElement("td");
-        wishlistTd.textContent = "Loading...";
-        tr.appendChild(wishlistTd);
-
-        // Fetch recipient's wishlist and update the cell
-        loadWishlist(recipientName)
-          .then((items) => {
-            updateWishlistCell(wishlistTd, items);
-          })
-          .catch((err) => {
-            console.error(err);
-            wishlistTd.textContent = "Error loading wishlist";
-          });
-
         tbody.appendChild(tr);
       });
 
       table.appendChild(tbody);
       resultsEl.appendChild(table);
-    }
-
-    // Update wishlist cell content
-    function updateWishlistCell(cell, items) {
-      cell.innerHTML = ""; // clear "Loading..."
-
-      if (!items || items.length === 0) {
-        const p = document.createElement("span");
-        p.className = "hint";
-        p.textContent = "No wishlist yet.";
-        cell.appendChild(p);
-        return;
-      }
-
-      const ul = document.createElement("ul");
-      items.forEach((item) => {
-        const li = document.createElement("li");
-        li.textContent = item;
-        ul.appendChild(li);
-      });
-      cell.appendChild(ul);
-    }
-
-    // ---- Wishlist: fetch from backend ----
-    async function loadWishlist(name) {
-      const url = `${API_BASE}/api/wishlist/${encodeURIComponent(name)}`;
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error("Failed to load wishlist");
-      }
-      const data = await res.json();
-      return Array.isArray(data.items) ? data.items : [];
     }
 
     // Query param helper
@@ -162,7 +106,7 @@
       return params.get(name);
     }
 
-    // Base64 helpers (must match encodeBase64 in app.js)
+    // Base64 helper (must match encodeBase64 in app.js)
     function decodeBase64(str) {
       return decodeURIComponent(escape(atob(str)));
     }
