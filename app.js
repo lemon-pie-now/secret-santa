@@ -15,15 +15,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const recipient = getQueryParam("recipient");
 
   if (giver && recipient) {
-    // Show assignment-only view
-    generatorView.classList.add("hidden");
-    assignmentView.classList.remove("hidden");
-    assignmentText.textContent = `${giver}, you are gifting to: ${recipient}.`;
-  } else {
-    // Normal organizer view
-    generatorView.classList.remove("hidden");
-    assignmentView.classList.add("hidden");
-  }
+  currentGiver = giver;
+  currentRecipient = recipient;
+
+  generatorView.classList.add("hidden");
+  assignmentView.classList.remove("hidden");
+  assignmentText.textContent =
+    `${giver}, you are gifting to: ${recipient}. ` +
+    `Below you can see what ${recipient} would like to receive, ` +
+    `and add your own wishlist so your Secret Santa knows what to get you.`;
+
+  initWishlistUI();
+}
 });
 
 // ===== Event: generate pairs =====
