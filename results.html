@@ -2,84 +2,117 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Secret Santa Links</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="container">
+
     <h1>Secret Santa Links</h1>
     <p class="hint">
-      Find your name and click your Secret Link.
-      That page will show who you are gifting to and your recipient’s wishlist (if they added one).
+      Participants: find your name and open your Secret Link.
+      That page will show who you are gifting to and your recipient’s wishlist (if they saved one).
     </p>
 
+    <div class="card">
+      <p class="hint">
+        Event:
+        <span id="eventLabel" class="mono"></span>
+      </p>
+      <div class="row">
+        <input id="searchInput" class="search" type="text" placeholder="Search your name..." />
+      </div>
+    </div>
+
     <p id="error" class="error"></p>
-    <div id="results"></div>
+    <div id="results" class="results"></div>
+
   </div>
 
   <script>
-    // MUST match your frontend app.js API_BASE
-    const API_BASE = "https://secret-santa-api-ijd1.onrender.com/";
+    // 🔧 Set this to your deployed backend URL (Render/Railway/etc.)
+    // Example: "https://secret-santa-api-xyz.onrender.com"
+    const API_BASE = "https://YOUR-RENDER-API.onrender.com";
 
     const errorEl = document.getElementById("error");
     const resultsEl = document.getElementById("results");
+    const eventLabelEl = document.getElementById("eventLabel");
+    const searchInput = document.getElementById("searchInput");
+
+    let eventId = null;
+    let pairsCache = [];
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const eventId = getQueryParam("event");
+      eventId = getQueryParam("event");
       if (!eventId) {
-        errorEl.textContent = "Missing event id. Ask the organizer for the correct link.";
+        errorEl.textContent = "Missing event id. Ask the organizer for the correct Results link.";
         return;
       }
+
+      eventLabelEl.textContent = eventId;
 
       try {
         const res = await fetch(`${API_BASE}/api/event/${encodeURIComponent(eventId)}/pairs`);
         if (!res.ok) throw new Error("Failed to load event pairs");
         const data = await res.json();
+        pairsCache = Array.isArray(data.pairs) ? data.pairs : [];
 
-        renderTable(eventId, data.pairs || []);
+        renderTable(pairsCache);
       } catch (err) {
         console.error(err);
-        errorEl.textContent = "Could not load the event. Check the link or try again later.";
+        errorEl.textContent = "Could not load this event. Check the link or try again later.";
       }
     });
 
-    function renderTable(eventId, pairs) {
+    searchInput.addEventListener("input", () => {
+      const q = (searchInput.value || "").trim().toLowerCase();
+      const filtered = !q
+        ? pairsCache
+        : pairsCache.filter(p => (p.giver || "").toLowerCase().includes(q));
+      renderTable(filtered);
+    });
+
+    function renderTable(pairs) {
       resultsEl.innerHTML = "";
 
       if (!pairs.length) {
-        resultsEl.textContent = "No pairs found for this event.";
+        const p = document.createElement("p");
+        p.className = "hint";
+        p.textContent = "No matches.";
+        resultsEl.appendChild(p);
         return;
       }
 
-      const table = document.createElement("table");
-
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      ["Name", "Secret Link"].forEach((t) => {
-        const th = document.createElement("th");
-        th.textContent = t;
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-
-      const tbody = document.createElement("tbody");
-
+      // Base path to index.html in the same folder
       const assignmentBase =
         window.location.origin +
         window.location.pathname.replace(/results\.html?$/i, "");
 
-      // Sort by giver name for nicer UX
-      pairs.sort((a, b) => (a.giver || "").localeCompare(b.giver || ""));
+      // Sort by giver
+      const sorted = pairs.slice().sort((a, b) => (a.giver || "").localeCompare(b.giver || ""));
 
-      for (const p of pairs) {
+      const table = document.createElement("table");
+      const thead = document.createElement("thead");
+      const trh = document.createElement("tr");
+      ["Name", "Secret Link"].forEach(t => {
+        const th = document.createElement("th");
+        th.textContent = t;
+        trh.appendChild(th);
+      });
+      thead.appendChild(trh);
+      table.appendChild(thead);
+
+      const tbody = document.createElement("tbody");
+
+      for (const p of sorted) {
         const linkUrl =
           `${assignmentBase}?event=${encodeURIComponent(eventId)}&key=${encodeURIComponent(p.key)}`;
 
         const tr = document.createElement("tr");
 
         const nameTd = document.createElement("td");
-        nameTd.textContent = p.giver;
+        nameTd.textContent = p.giver || "";
         tr.appendChild(nameTd);
 
         const linkTd = document.createElement("td");

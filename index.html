@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Secret Santa</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -9,49 +10,59 @@
   <div class="container">
 
     <!-- Organizer view -->
-    <div id="generatorView">
+    <section id="generatorView">
       <h1>Secret Santa Generator</h1>
-      <p>Enter participants (one name per line):</p>
+      <p class="hint">
+        Organizer: enter participants (one name per line), generate an event, then share the Results link.
+      </p>
 
-      <textarea id="participantsInput" rows="8" placeholder="Alice
+      <label class="label" for="participantsInput">Participants</label>
+      <textarea
+        id="participantsInput"
+        rows="10"
+        placeholder="Alice
 Bob
 Charlie"></textarea>
 
-      <button id="generateBtn">Generate Event</button>
+      <div class="row">
+        <button id="generateBtn">Generate Event</button>
+      </div>
 
       <p id="error" class="error"></p>
 
-      <h2>Share</h2>
-      <div id="results"></div>
-    </div>
+      <div id="results" class="results"></div>
+    </section>
 
     <!-- Participant view -->
-    <div id="assignmentView" class="hidden">
-      <h1>Your Secret Santa Assignment</h1>
-      <p id="assignmentText"></p>
-      <p id="assignmentMeta" class="hint"></p>
+    <section id="assignmentView" class="hidden">
+      <h1>Your Secret Santa</h1>
 
-      <div class="wishlist-section">
+      <div class="card">
+        <p id="assignmentText" class="big"></p>
+        <p id="assignmentMeta" class="hint"></p>
+      </div>
+
+      <div class="card">
         <h2>What your recipient would like to receive</h2>
         <p class="hint">
-          These are the gift ideas your assigned person has added. Use this list to choose their present.
+          This wishlist is created by your recipient. If it’s empty, they haven’t saved one yet.
         </p>
         <div id="recipientWishlist"></div>
       </div>
 
-      <div class="wishlist-section">
+      <div class="card">
         <h2>Your own wishlist</h2>
         <p class="hint">
           Add up to 5 gift ideas you would like to receive.
-          <br>
-          <strong>Important:</strong> The person who is giving a gift to <em>you</em> will see this list when they open their Secret Santa link.
+          <br />
+          <strong>Important:</strong> The person gifting to <em>you</em> will see this list on their Secret Santa page.
         </p>
 
         <form id="wishlistForm">
           <table class="wishlist-table">
             <thead>
               <tr>
-                <th>#</th>
+                <th style="width: 50px;">#</th>
                 <th>Gift idea (for gifts YOU would like)</th>
               </tr>
             </thead>
@@ -64,12 +75,14 @@ Charlie"></textarea>
             </tbody>
           </table>
 
-          <button type="submit">Save my wishlist</button>
-        </form>
+          <div class="row">
+            <button type="submit">Save my wishlist</button>
+          </div>
 
-        <p id="wishlistSaveMsg" class="hint"></p>
+          <p id="wishlistSaveMsg" class="hint"></p>
+        </form>
       </div>
-    </div>
+    </section>
 
   </div>
 
