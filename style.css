@@ -5,7 +5,7 @@ body {
 }
 
 .container {
-  max-width: 700px;
+  max-width: 800px;
   margin: 40px auto;
   background: #ffffff;
   padding: 24px;
@@ -56,31 +56,51 @@ button:hover {
   display: none;
 }
 
-#results table {
+table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 12px;
 }
 
-#results th,
-#results td {
+th, td {
   padding: 8px;
   border-bottom: 1px solid #eeeeee;
   text-align: left;
+  vertical-align: top;
 }
 
-#results a {
+a {
+  font-size: 13px;
   text-decoration: none;
 }
 
-
-#results a:hover {
+a:hover {
   text-decoration: underline;
 }
-#results-button a {
-  color:white;
-  text-decoration: none;
+
+.wishlist-section {
+  margin-top: 24px;
 }
-#results-button a:visited {
-    color:white;
+
+.wishlist-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+  margin-bottom: 12px;
+}
+
+.wishlist-table th,
+.wishlist-table td {
+  border-bottom: 1px solid #eeeeee;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.wishlist-table input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: 1px solid #cccccc;
+  font-size: 14px;
 }

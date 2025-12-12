@@ -9,52 +9,55 @@
   <div class="container">
     <h1>Secret Santa Links</h1>
     <p class="hint">
-      Find your name in the list below and click your secret link to see:
-      <br>• Who you are gifting to
-      <br>• Your recipient's wishlist (if they have added one)
+      Find your name and click your Secret Link.
+      That page will show who you are gifting to and your recipient’s wishlist (if they added one).
     </p>
+
     <p id="error" class="error"></p>
     <div id="results"></div>
   </div>
 
   <script>
+    // MUST match your frontend app.js API_BASE
+    const API_BASE = "https://secret-santa-api-ijd1.onrender.com/";
+
     const errorEl = document.getElementById("error");
     const resultsEl = document.getElementById("results");
 
-    document.addEventListener("DOMContentLoaded", () => {
-      const dataParam = getQueryParam("data");
-      if (!dataParam) {
-        errorEl.textContent = "No Secret Santa data found in the URL.";
+    document.addEventListener("DOMContentLoaded", async () => {
+      const eventId = getQueryParam("event");
+      if (!eventId) {
+        errorEl.textContent = "Missing event id. Ask the organizer for the correct link.";
         return;
       }
 
-      let pairs;
       try {
-        const json = decodeBase64(dataParam);
-        pairs = JSON.parse(json);
-      } catch (e) {
-        console.error(e);
-        errorEl.textContent = "Could not read Secret Santa data.";
-        return;
-      }
+        const res = await fetch(`${API_BASE}/api/event/${encodeURIComponent(eventId)}/pairs`);
+        if (!res.ok) throw new Error("Failed to load event pairs");
+        const data = await res.json();
 
-      if (!Array.isArray(pairs) || pairs.length === 0) {
-        errorEl.textContent = "No assignments found.";
-        return;
+        renderTable(eventId, data.pairs || []);
+      } catch (err) {
+        console.error(err);
+        errorEl.textContent = "Could not load the event. Check the link or try again later.";
       }
-
-      renderLinksTable(pairs);
     });
 
-    // Render the table with giver + secret link
-    function renderLinksTable(pairs) {
+    function renderTable(eventId, pairs) {
+      resultsEl.innerHTML = "";
+
+      if (!pairs.length) {
+        resultsEl.textContent = "No pairs found for this event.";
+        return;
+      }
+
       const table = document.createElement("table");
 
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
-      ["Giver", "Secret Link"].forEach((text) => {
+      ["Name", "Secret Link"].forEach((t) => {
         const th = document.createElement("th");
-        th.textContent = text;
+        th.textContent = t;
         headerRow.appendChild(th);
       });
       thead.appendChild(headerRow);
@@ -62,53 +65,41 @@
 
       const tbody = document.createElement("tbody");
 
-      // Link back to index.html in the same folder (default file)
       const assignmentBase =
         window.location.origin +
         window.location.pathname.replace(/results\.html?$/i, "");
 
-      pairs.forEach((pair) => {
-        const giverName = pair.from;
-        const recipientName = pair.to;
+      // Sort by giver name for nicer UX
+      pairs.sort((a, b) => (a.giver || "").localeCompare(b.giver || ""));
 
+      for (const p of pairs) {
         const linkUrl =
-          `${assignmentBase}?giver=` +
-          encodeURIComponent(giverName) +
-          `&recipient=` +
-          encodeURIComponent(recipientName);
+          `${assignmentBase}?event=${encodeURIComponent(eventId)}&key=${encodeURIComponent(p.key)}`;
 
         const tr = document.createElement("tr");
 
-        // Giver
-        const giverTd = document.createElement("td");
-        giverTd.textContent = giverName;
-        tr.appendChild(giverTd);
+        const nameTd = document.createElement("td");
+        nameTd.textContent = p.giver;
+        tr.appendChild(nameTd);
 
-        // Secret link
         const linkTd = document.createElement("td");
-        const linkA = document.createElement("a");
-        linkA.href = linkUrl;
-        linkA.textContent = linkUrl;
-        linkA.target = "_blank";
-        linkTd.appendChild(linkA);
+        const a = document.createElement("a");
+        a.href = linkUrl;
+        a.textContent = linkUrl;
+        a.target = "_blank";
+        linkTd.appendChild(a);
         tr.appendChild(linkTd);
 
         tbody.appendChild(tr);
-      });
+      }
 
       table.appendChild(tbody);
       resultsEl.appendChild(table);
     }
 
-    // Query param helper
     function getQueryParam(name) {
       const params = new URLSearchParams(window.location.search);
       return params.get(name);
-    }
-
-    // Base64 helper (must match encodeBase64 in app.js)
-    function decodeBase64(str) {
-      return decodeURIComponent(escape(atob(str)));
     }
   </script>
 </body>

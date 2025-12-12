@@ -1,4 +1,12 @@
-// ===== DOM elements =====
+// ----------------------
+// CONFIG
+// ----------------------
+// Put your deployed backend URL here (Render/Railway/etc), NOT localhost.
+const API_BASE = "https://secret-santa-api-ijd1.onrender.com/";
+
+// ----------------------
+// DOM
+// ----------------------
 const participantsInput = document.getElementById("participantsInput");
 const generateBtn = document.getElementById("generateBtn");
 const errorEl = document.getElementById("error");
@@ -7,184 +15,152 @@ const resultsEl = document.getElementById("results");
 const generatorView = document.getElementById("generatorView");
 const assignmentView = document.getElementById("assignmentView");
 const assignmentText = document.getElementById("assignmentText");
-const API_BASE = "https://secret-santa-api-ijd1.onrender.com/";
+const assignmentMeta = document.getElementById("assignmentMeta");
 
-// ===== On load: check if this is an assignment link =====
-document.addEventListener("DOMContentLoaded", () => {
-  const giver = getQueryParam("giver");
-  const recipient = getQueryParam("recipient");
+const wishlistForm = document.getElementById("wishlistForm");
+const wishlistInputs = document.querySelectorAll(".wishlist-input");
+const wishlistSaveMsg = document.getElementById("wishlistSaveMsg");
+const recipientWishlistEl = document.getElementById("recipientWishlist");
 
-  if (giver && recipient) {
-  currentGiver = giver;
-  currentRecipient = recipient;
+let currentEventId = null;
+let currentKey = null;
+let currentGiver = null;
+let currentRecipient = null;
 
-  generatorView.classList.add("hidden");
-  assignmentView.classList.remove("hidden");
-  assignmentText.textContent =
-    `${giver}, you are gifting to: ${recipient}. ` +
-    `Below you can see what ${recipient} would like to receive, ` +
-    `and add your own wishlist so your Secret Santa knows what to get you.`;
+// ----------------------
+// INIT
+// ----------------------
+document.addEventListener("DOMContentLoaded", async () => {
+  const eventId = getQueryParam("event");
+  const key = getQueryParam("key");
 
-  initWishlistUI();
-}
-});
+  // Participant link mode: index.html?event=EVENT_ID&key=PAIR_KEY
+  if (eventId && key) {
+    currentEventId = eventId;
+    currentKey = key;
 
-// ===== Event: generate pairs =====
-generateBtn.addEventListener("click", () => {
-  errorEl.textContent = "";
-  resultsEl.innerHTML = "";
+    generatorView.classList.add("hidden");
+    assignmentView.classList.remove("hidden");
 
-  let names;
-  try {
-    names = parseNames(participantsInput.value);
-  } catch (err) {
-    errorEl.textContent = err.message;
-    return;
-  }
+    try {
+      const pair = await fetchPair(currentEventId, currentKey);
+      currentGiver = pair.giver;
+      currentRecipient = pair.recipient;
 
-  if (names.length < 2) {
-    errorEl.textContent = "Please enter at least 2 participants.";
-    return;
-  }
+      assignmentText.textContent =
+        `${currentGiver}, you are gifting to: ${currentRecipient}.`;
 
-  const pairs = generateSecretSantaPairs(names);
+      assignmentMeta.textContent =
+        "Below you can see your recipient’s wishlist and add your own wishlist (so your Secret Santa knows what to get you).";
 
-  if (!pairs) {
-    errorEl.textContent = "Could not generate pairs. Try a different list.";
-    return;
-  }
-
-  renderResults(pairs);
-});
-
-// ===== Parse names (one per line) =====
-function parseNames(text) {
-  const lines = text
-    .split("\n")
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-
-  if (lines.length === 0) {
-    throw new Error("Please enter at least 2 participants.");
-  }
-
-  // Optional: check for duplicate names
-  const lowerNames = lines.map((n) => n.toLowerCase());
-  const uniqueNames = new Set(lowerNames);
-  if (uniqueNames.size !== lowerNames.length) {
-    throw new Error("Duplicate names detected. Names must be unique.");
-  }
-
-  return lines;
-}
-
-// ===== Fisher–Yates shuffle =====
-function shuffle(array) {
-  const arr = array.slice(); // copy
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]];
-  }
-  return arr;
-}
-
-// ===== Generate Secret Santa pairs (no self-pair) =====
-function generateSecretSantaPairs(names) {
-  const maxAttempts = 100;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const givers = names.slice();
-    const receivers = shuffle(names);
-
-    let valid = true;
-    for (let i = 0; i < givers.length; i++) {
-      if (givers[i] === receivers[i]) {
-        valid = false;
-        break;
-      }
+      await initWishlistUI();
+    } catch (err) {
+      console.error(err);
+      assignmentText.textContent = "Could not load your assignment.";
+      assignmentMeta.textContent = "Check your link or try again later.";
     }
 
-    if (valid) {
-      const pairs = [];
-      for (let i = 0; i < givers.length; i++) {
-        pairs.push({ from: givers[i], to: receivers[i] });
-      }
-      return pairs;
-    }
+    return;
   }
 
-  return null;
+  // Organizer mode
+  generatorView.classList.remove("hidden");
+  assignmentView.classList.add("hidden");
+});
+
+// ----------------------
+// ORGANIZER: Generate Event
+// ----------------------
+if (generateBtn) {
+  generateBtn.addEventListener("click", async () => {
+    errorEl.textContent = "";
+    resultsEl.innerHTML = "";
+
+    let names;
+    try {
+      names = parseNames(participantsInput.value);
+    } catch (err) {
+      errorEl.textContent = err.message;
+      return;
+    }
+
+    if (names.length < 2) {
+      errorEl.textContent = "Please enter at least 2 participants.";
+      return;
+    }
+
+    const pairs = generateSecretSantaPairs(names);
+    if (!pairs) {
+      errorEl.textContent = "Could not generate pairs. Try again.";
+      return;
+    }
+
+    // Create a new eventId for this run
+    const eventId = generateId(10);
+
+    try {
+      // Save each pair to backend under this event
+      for (const p of pairs) {
+        const key = generateId(12);
+        await savePair(eventId, key, p.from, p.to);
+        p.key = key; // attach for rendering
+      }
+
+      renderOrganizerShare(eventId, pairs);
+    } catch (err) {
+      console.error(err);
+      errorEl.textContent = "Failed to save pairs to backend. Check API_BASE and try again.";
+    }
+  });
 }
 
-// ===== Render results + create shareable results page URL =====
-function renderResults(pairs) {
-  // Clear previous results
+function renderOrganizerShare(eventId, pairsWithKeys) {
   resultsEl.innerHTML = "";
 
-  // Data we want to share on results.html
-  const pairsForSharing = pairs.map((p) => ({
-    from: p.from,
-    to: p.to,
-  }));
-
-  const encoded = encodeBase64(JSON.stringify(pairsForSharing));
-
-  // Build URL to results.html in the same folder
   const basePath =
     window.location.origin +
     window.location.pathname.replace(/index\.html?$/i, "");
-  const shareUrl = `${basePath}results.html?data=${encoded}`;
 
-  // Show the share URL
+  const resultsUrl = `${basePath}results.html?event=${encodeURIComponent(eventId)}`;
+
   const shareP = document.createElement("p");
   shareP.innerHTML =
-    `Share this page with your participants: <br>` +
-    `<button id="results-button"><a href="${shareUrl}" target="_blank">"Results"</a></button>`;
+    `Share this page with participants:<br>` +
+    `<a href="${resultsUrl}" target="_blank">${resultsUrl}</a>`;
   resultsEl.appendChild(shareP);
 
-  // Also show local table of individual links (for the organizer)
   const table = document.createElement("table");
-
   const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-
-  ["Giver", "Secret Link"].forEach((text) => {
+  const hr = document.createElement("tr");
+  ["Giver", "Secret Link"].forEach((t) => {
     const th = document.createElement("th");
-    th.textContent = text;
-    headerRow.appendChild(th);
+    th.textContent = t;
+    hr.appendChild(th);
   });
-
-  thead.appendChild(headerRow);
+  thead.appendChild(hr);
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
 
-  const assignmentBase =
-    window.location.origin +
-    window.location.pathname.replace(/index\.html?$/i, "");
+  // Sort by giver for nicer display
+  pairsWithKeys.sort((a, b) => (a.from || "").localeCompare(b.from || ""));
 
-  for (const pair of pairs) {
-    const giverName = pair.from;
-    const recipientName = pair.to;
-
+  for (const p of pairsWithKeys) {
     const linkUrl =
-      `${assignmentBase}?giver=` +
-      encodeURIComponent(giverName) +
-      `&recipient=` +
-      encodeURIComponent(recipientName);
+      `${basePath}?event=${encodeURIComponent(eventId)}&key=${encodeURIComponent(p.key)}`;
 
     const tr = document.createElement("tr");
 
     const giverTd = document.createElement("td");
-    giverTd.textContent = giverName;
+    giverTd.textContent = p.from;
     tr.appendChild(giverTd);
 
     const linkTd = document.createElement("td");
-    const linkA = document.createElement("a");
-    linkA.href = linkUrl;
-    linkA.textContent = `${giverName} Link`;
-    linkA.target = "_blank";
-    linkTd.appendChild(linkA);
+    const a = document.createElement("a");
+    a.href = linkUrl;
+    a.textContent = linkUrl;
+    a.target = "_blank";
+    linkTd.appendChild(a);
     tr.appendChild(linkTd);
 
     tbody.appendChild(tr);
@@ -194,79 +170,171 @@ function renderResults(pairs) {
   resultsEl.appendChild(table);
 }
 
-// ---- Wishlist: fetch from backend ----
-async function loadWishlist(name) {
-  const url = `${API_BASE}/api/wishlist/${encodeURIComponent(name)}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    return [];
+// ----------------------
+// PARTICIPANT: Wishlists
+// ----------------------
+async function initWishlistUI() {
+  if (!wishlistForm || !currentEventId || !currentGiver || !currentRecipient) return;
+
+  // Load giver's own wishlist into form
+  const myWishlist = await loadWishlist(currentEventId, currentGiver);
+  for (let i = 0; i < wishlistInputs.length; i++) {
+    wishlistInputs[i].value = myWishlist[i] || "";
   }
-  const data = await res.json();
-  return Array.isArray(data.items) ? data.items : [];
-}
 
-// ---- Wishlist: save to backend ----
-async function saveWishlist(name, items) {
-  const url = `${API_BASE}/api/wishlist`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, items }),
-  });
-  if (!res.ok) {
-    throw new Error("Failed to save wishlist");
-  }
-}
-function initWishlistUI() {
-  if (!wishlistForm || !currentGiver || !currentRecipient) return;
-
-  // Load giver's wishlist into form
-  loadWishlist(currentGiver).then((myWishlist) => {
-    for (let i = 0; i < wishlistInputs.length; i++) {
-      wishlistInputs[i].value = myWishlist[i] || "";
-    }
-  });
-
-  // Load recipient's wishlist to display
-  loadWishlist(currentRecipient).then((recipWishlist) => {
-    renderWishlistDisplay(recipWishlist);
-  });
+  // Load recipient wishlist for display
+  const recipWishlist = await loadWishlist(currentEventId, currentRecipient);
+  renderWishlistDisplay(recipWishlist);
 }
 
 if (wishlistForm) {
   wishlistForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!currentGiver) return;
+    wishlistSaveMsg.textContent = "";
+
+    if (!currentEventId || !currentGiver) return;
 
     const items = [];
     wishlistInputs.forEach((input) => {
-      const value = input.value.trim();
-      if (value.length > 0) {
-        items.push(value);
-      }
+      const v = input.value.trim();
+      if (v) items.push(v);
     });
 
     try {
-      await saveWishlist(currentGiver, items);
-      wishlistSaveMsg.textContent = "Your gift preferences have been saved.";
+      await saveWishlist(currentEventId, currentGiver, items);
+      wishlistSaveMsg.textContent = "Saved!";
     } catch (err) {
       console.error(err);
-      wishlistSaveMsg.textContent =
-        "There was a problem saving your preferences.";
+      wishlistSaveMsg.textContent = "Could not save. Please try again.";
     }
   });
 }
-// ===== Helper: get query param =====
+
+function renderWishlistDisplay(items) {
+  recipientWishlistEl.innerHTML = "";
+
+  if (!items || items.length === 0) {
+    const p = document.createElement("p");
+    p.className = "hint";
+    p.textContent = "Your recipient has not added a wishlist yet.";
+    recipientWishlistEl.appendChild(p);
+    return;
+  }
+
+  const ul = document.createElement("ul");
+  items.forEach((item) => {
+    const li = document.createElement("li");
+    li.textContent = item;
+    ul.appendChild(li);
+  });
+  recipientWishlistEl.appendChild(ul);
+}
+
+// ----------------------
+// API Calls
+// ----------------------
+async function savePair(eventId, key, giver, recipient) {
+  const res = await fetch(`${API_BASE}/api/pair`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eventId, key, giver, recipient })
+  });
+  if (!res.ok) throw new Error("Failed to save pair");
+}
+
+async function fetchPair(eventId, key) {
+  const res = await fetch(
+    `${API_BASE}/api/pair/${encodeURIComponent(eventId)}/${encodeURIComponent(key)}`
+  );
+  if (!res.ok) throw new Error("Failed to fetch pair");
+  return await res.json();
+}
+
+async function loadWishlist(eventId, name) {
+  const res = await fetch(
+    `${API_BASE}/api/wishlist/${encodeURIComponent(eventId)}/${encodeURIComponent(name)}`
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return Array.isArray(data.items) ? data.items : [];
+}
+
+async function saveWishlist(eventId, name, items) {
+  const res = await fetch(`${API_BASE}/api/wishlist`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eventId, name, items })
+  });
+  if (!res.ok) throw new Error("Failed to save wishlist");
+}
+
+// ----------------------
+// Core logic: parse + generate pairs
+// ----------------------
+function parseNames(text) {
+  const lines = text
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
+
+  if (lines.length < 2) {
+    throw new Error("Please enter at least 2 participants.");
+  }
+
+  const lower = lines.map((n) => n.toLowerCase());
+  const unique = new Set(lower);
+  if (unique.size !== lower.length) {
+    throw new Error("Duplicate names detected. Names must be unique.");
+  }
+
+  return lines;
+}
+
+function shuffle(array) {
+  const arr = array.slice();
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function generateSecretSantaPairs(names) {
+  const maxAttempts = 100;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const receivers = shuffle(names);
+
+    let valid = true;
+    for (let i = 0; i < names.length; i++) {
+      if (names[i] === receivers[i]) {
+        valid = false;
+        break;
+      }
+    }
+
+    if (valid) {
+      return names.map((giver, i) => ({ from: giver, to: receivers[i] }));
+    }
+  }
+
+  return null;
+}
+
+// ----------------------
+// Utils
+// ----------------------
 function getQueryParam(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name);
 }
 
-// ===== Helpers for base64 with UTF-8 support =====
-function encodeBase64(str) {
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-function decodeBase64(str) {
-  return decodeURIComponent(escape(atob(str)));
+// random-ish id suitable for links (learning app)
+function generateId(len = 10) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let out = "";
+  for (let i = 0; i < len; i++) {
+    out += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return out;
 }
